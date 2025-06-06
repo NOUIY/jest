@@ -6,8 +6,8 @@
  */
 
 import * as path from 'path';
-import chalk = require('chalk');
-import slash = require('slash');
+import chalk from 'chalk';
+import slash from 'slash';
 import type {IModuleMap} from 'jest-haste-map';
 import {tryRealpath} from 'jest-util';
 import ModuleNotFoundError from './ModuleNotFoundError';
@@ -341,7 +341,7 @@ export default class Resolver {
   resolveModule(
     from: string,
     moduleName: string,
-    options: ResolveModuleConfig,
+    options?: ResolveModuleConfig,
   ): string {
     const dirname = path.dirname(from);
     const module =
@@ -491,7 +491,7 @@ export default class Resolver {
   getMockModule(
     from: string,
     name: string,
-    options: Pick<ResolveModuleConfig, 'conditions'>,
+    options?: Pick<ResolveModuleConfig, 'conditions'>,
   ): string | null {
     const mock = this._moduleMap.getMockModule(name);
     if (mock) {
@@ -737,7 +737,7 @@ export default class Resolver {
   resolveStubModuleName(
     from: string,
     moduleName: string,
-    options: Pick<ResolveModuleConfig, 'conditions'>,
+    options?: Pick<ResolveModuleConfig, 'conditions'>,
   ): string | null {
     const dirname = path.dirname(from);
 
