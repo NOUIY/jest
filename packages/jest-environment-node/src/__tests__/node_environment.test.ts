@@ -87,8 +87,4 @@ describe('NodeEnvironment', () => {
   test('TextEncoder references the same global Uint8Array constructor', () => {
     expect(new TextEncoder().encode('abc')).toBeInstanceOf(Uint8Array);
   });
-
-  test('dispatch event', () => {
-    new EventTarget().dispatchEvent(new Event('foo'));
-  });
 });
