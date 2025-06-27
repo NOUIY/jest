@@ -8,8 +8,8 @@
 import * as path from 'path';
 import {isNativeError} from 'util/types';
 import * as fs from 'graceful-fs';
-import parseJson = require('parse-json');
-import stripJsonComments = require('strip-json-comments');
+import parseJson from 'parse-json';
+import stripJsonComments from 'strip-json-comments';
 import type {Config} from '@jest/types';
 import {extract, parse} from 'jest-docblock';
 import {interopRequireDefault, requireOrImportModule} from 'jest-util';
@@ -39,9 +39,29 @@ export default async function readConfigFileAndSetRootDir(
   let configObject;
 
   try {
-    // @ts-expect-error: type assertion can be removed once @types/node is updated to 23 https://nodejs.org/api/process.html#processfeaturestypescript
-    if (isTS && !process.features.typescript) {
-      configObject = await loadTSConfigFile(configPath);
+    if (isTS) {
+      // @ts-expect-error: Type assertion can be removed once @types/node is updated to 23 https://nodejs.org/api/process.html#processfeaturestypescript
+      if (process.features.typescript) {
+        try {
+          // Try native node TypeScript support first.
+          configObject = await requireOrImportModule<any>(configPath);
+        } catch (error) {
+          if (
+            !(
+              error instanceof SyntaxError &&
+              // Likely ESM in a file interpreted as CJS, which means it needs to be
+              // compiled. We ignore the error and try to load it with a loader.
+              /Unexpected token '(export|import)'/.test(error.message)
+            )
+          ) {
+            throw error;
+          }
+        }
+      }
+      // Fall back to `ts-node` etc. if this cannot be natively parsed/executed.
+      if (!configObject) {
+        configObject = await loadTSConfigFile(configPath);
+      }
     } else if (isJSON) {
       const fileContent = fs.readFileSync(configPath, 'utf8');
       configObject = parseJson(stripJsonComments(fileContent), configPath);

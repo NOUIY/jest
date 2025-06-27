@@ -1482,10 +1482,6 @@ type ResolverOptions = {
   moduleDirectory?: Array<string>;
   /** List of `require.paths` to use if nothing is found in `node_modules`. */
   paths?: Array<string>;
-  /** Allows transforming parsed `package.json` contents. */
-  packageFilter?: (pkg: PackageJSON, file: string, dir: string) => PackageJSON;
-  /** Allows transforms a path within a package. */
-  pathFilter?: (pkg: PackageJSON, path: string, relativePath: string) => string;
   /** Current root directory. */
   rootDir?: string;
 };
@@ -2417,7 +2413,7 @@ Default: `false` or `true` if there is only one test file to run
 
 Indicates whether each individual test should be reported during the run. All errors will also still be shown on the bottom after execution.
 
-### `waitNextEventLoopTurnForUnhandledRejectionEvents` \[boolean]
+### `waitForUnhandledRejections` \[boolean]
 
 Gives one event loop turn to handle `rejectionHandled`, `uncaughtException` or `unhandledRejection`.
 
