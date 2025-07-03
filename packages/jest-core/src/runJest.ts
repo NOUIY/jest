@@ -8,8 +8,8 @@
 import * as path from 'path';
 import {performance} from 'perf_hooks';
 import type {WriteStream} from 'tty';
-import chalk = require('chalk');
-import exit = require('exit-x');
+import chalk from 'chalk';
+import exit from 'exit-x';
 import * as fs from 'graceful-fs';
 import {CustomConsole} from '@jest/console';
 import {
@@ -216,6 +216,14 @@ export default async function runJest({
 
   allTests = await sequencer.sort(allTests);
 
+  if (globalConfig.onlyFailures) {
+    if (failedTestsCache) {
+      allTests = failedTestsCache.filterTests(allTests);
+    } else {
+      allTests = await sequencer.allFailedTests(allTests);
+    }
+  }
+
   if (globalConfig.listTests) {
     const testsPaths = [...new Set(allTests.map(test => test.path))];
     let testsListOutput;
@@ -236,14 +244,6 @@ export default async function runJest({
 
     onComplete?.(makeEmptyAggregatedTestResult());
     return;
-  }
-
-  if (globalConfig.onlyFailures) {
-    if (failedTestsCache) {
-      allTests = failedTestsCache.filterTests(allTests);
-    } else {
-      allTests = await sequencer.allFailedTests(allTests);
-    }
   }
 
   const hasTests = allTests.length > 0;

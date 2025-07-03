@@ -12,14 +12,17 @@ import type {
   JestEnvironmentConfig,
 } from '@jest/environment';
 import {LegacyFakeTimers, ModernFakeTimers} from '@jest/fake-timers';
-import type {Global} from '@jest/types';
+import type {Config, Global} from '@jest/types';
 import {ModuleMocker} from 'jest-mock';
 import {
+  type DeletionMode,
   canDeleteProperties,
   deleteProperties,
+  initializeGarbageCollectionUtils,
   installCommonGlobals,
   protectProperties,
 } from 'jest-util';
+import {logValidationWarning} from 'jest-validate';
 
 type Timer = {
   id: number;
@@ -90,6 +93,10 @@ export default class NodeEnvironment implements JestEnvironment<Timer> {
   // while `context` is unused, it should always be passed
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const {projectConfig} = config;
+
+    const globalsCleanupMode = readGlobalsCleanupConfig(projectConfig);
+    initializeGarbageCollectionUtils(globalThis, globalsCleanupMode);
+
     this._globalProxy = new GlobalProxy();
     this.context = createContext(this._globalProxy.proxy());
     const global = runInContext(
@@ -157,7 +164,7 @@ export default class NodeEnvironment implements JestEnvironment<Timer> {
     // same constructor is referenced by both.
     global.Uint8Array = Uint8Array;
 
-    installCommonGlobals(global, projectConfig.globals);
+    installCommonGlobals(global, projectConfig.globals, globalsCleanupMode);
 
     if ('asyncDispose' in Symbol && !('asyncDispose' in global.Symbol)) {
       const globalSymbol = global.Symbol as unknown as SymbolConstructor;
@@ -270,20 +277,14 @@ class GlobalProxy implements ProxyHandler<typeof globalThis> {
    * 2. Properties protected by {@link #protectProperties}.
    */
   clear(): void {
-    for (const {property, value} of [
+    for (const {value} of [
       ...[...this.propertyToValue.entries()].map(([property, value]) => ({
         property,
         value,
       })),
       ...this.leftovers,
     ]) {
-      /*
-       * React Native's test setup invokes their custom `performance` property after env teardown.
-       * Once they start using `protectProperties`, we can get rid of this.
-       */
-      if (property !== 'performance') {
-        deleteProperties(value);
-      }
+      deleteProperties(value);
     }
     this.propertyToValue.clear();
     this.leftovers = [];
@@ -341,6 +342,29 @@ class GlobalProxy implements ProxyHandler<typeof globalThis> {
       }
 
       this.propertyToValue.set(property, value);
+    }
+  }
+}
+
+function readGlobalsCleanupConfig(
+  projectConfig: Config.ProjectConfig,
+): DeletionMode {
+  const rawConfig = projectConfig.testEnvironmentOptions.globalsCleanup;
+  const config = rawConfig?.toString()?.toLowerCase();
+  switch (config) {
+    case 'off':
+    case 'on':
+    case 'soft':
+      return config;
+    default: {
+      if (config !== undefined) {
+        logValidationWarning(
+          'testEnvironmentOptions.globalsCleanup',
+          `Unknown value given: ${rawConfig}`,
+          'Available options are: [on, soft, off]',
+        );
+      }
+      return 'soft';
     }
   }
 }

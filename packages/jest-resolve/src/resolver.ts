@@ -5,9 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import {isBuiltin} from 'module';
 import * as path from 'path';
-import chalk = require('chalk');
-import slash = require('slash');
+import chalk from 'chalk';
+import slash from 'slash';
 import type {IModuleMap} from 'jest-haste-map';
 import {tryRealpath} from 'jest-util';
 import ModuleNotFoundError from './ModuleNotFoundError';
@@ -15,9 +16,9 @@ import defaultResolver, {
   type AsyncResolver,
   type Resolver as ResolverInterface,
   type SyncResolver,
+  defaultAsyncResolver,
 } from './defaultResolver';
 import {clearFsCache} from './fileWalkers';
-import isBuiltinModule from './isBuiltinModule';
 import nodeModulesPaths, {GlobalPaths} from './nodeModulesPaths';
 import shouldLoadAsEsm, {clearCachedLookups} from './shouldLoadAsEsm';
 import type {ResolverConfig} from './types';
@@ -122,6 +123,7 @@ export default class Resolver {
       return resolver(path, {
         basedir: options.basedir,
         conditions: options.conditions,
+        defaultAsyncResolver,
         defaultResolver,
         extensions: options.extensions,
         moduleDirectory: options.moduleDirectory,
@@ -142,7 +144,7 @@ export default class Resolver {
     options: FindNodeModuleConfig,
   ): Promise<string | null> {
     const resolverModule = loadResolver(options.resolver);
-    let resolver: ResolverInterface = defaultResolver;
+    let resolver: ResolverInterface = defaultAsyncResolver;
 
     if (typeof resolverModule === 'function') {
       resolver = resolverModule;
@@ -165,6 +167,7 @@ export default class Resolver {
       const result = await resolver(path, {
         basedir: options.basedir,
         conditions: options.conditions,
+        defaultAsyncResolver,
         defaultResolver,
         extensions: options.extensions,
         moduleDirectory: options.moduleDirectory,
@@ -341,7 +344,7 @@ export default class Resolver {
   resolveModule(
     from: string,
     moduleName: string,
-    options: ResolveModuleConfig,
+    options?: ResolveModuleConfig,
   ): string {
     const dirname = path.dirname(from);
     const module =
@@ -454,7 +457,7 @@ export default class Resolver {
   isCoreModule(moduleName: string): boolean {
     return (
       this._options.hasCoreModules &&
-      (isBuiltinModule(moduleName) || moduleName.startsWith('node:')) &&
+      isBuiltin(moduleName) &&
       !this._isAliasModule(moduleName)
     );
   }
@@ -491,7 +494,7 @@ export default class Resolver {
   getMockModule(
     from: string,
     name: string,
-    options: Pick<ResolveModuleConfig, 'conditions'>,
+    options?: Pick<ResolveModuleConfig, 'conditions'>,
   ): string | null {
     const mock = this._moduleMap.getMockModule(name);
     if (mock) {
@@ -737,7 +740,7 @@ export default class Resolver {
   resolveStubModuleName(
     from: string,
     moduleName: string,
-    options: Pick<ResolveModuleConfig, 'conditions'>,
+    options?: Pick<ResolveModuleConfig, 'conditions'>,
   ): string | null {
     const dirname = path.dirname(from);
 
