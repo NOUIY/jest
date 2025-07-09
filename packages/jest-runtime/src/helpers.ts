@@ -7,7 +7,7 @@
 
 import * as path from 'path';
 import {glob} from 'glob';
-import slash = require('slash');
+import slash from 'slash';
 import type {Config} from '@jest/types';
 
 const OUTSIDE_JEST_VM_PROTOCOL = 'jest-main:';
@@ -43,15 +43,17 @@ export const findSiblingsWithFileExtension = (
 
       const matches = glob
         .sync(`${pathToModule}.*`, {windowsPathsNoEscape: true})
-        .map(match => slash(match))
         .map(match => {
-          const relativePath = path.posix.relative(slashedDirname, match);
+          const slashedMap = slash(match);
+          const relativePath = path.posix.relative(slashedDirname, slashedMap);
 
-          return path.posix.dirname(match) === slashedDirname
-            ? `./${relativePath}`
-            : relativePath;
+          const slashedPath =
+            path.posix.dirname(slashedMap) === slashedDirname
+              ? `./${relativePath}`
+              : relativePath;
+
+          return `\t'${slashedPath}'`;
         })
-        .map(match => `\t'${match}'`)
         .join('\n');
 
       if (matches) {

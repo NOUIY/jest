@@ -8,8 +8,8 @@
 import * as path from 'path';
 import {isNativeError} from 'util/types';
 import * as fs from 'graceful-fs';
-import parseJson = require('parse-json');
-import stripJsonComments = require('strip-json-comments');
+import parseJson from 'parse-json';
+import stripJsonComments from 'strip-json-comments';
 import type {Config} from '@jest/types';
 import {extract, parse} from 'jest-docblock';
 import {interopRequireDefault, requireOrImportModule} from 'jest-util';
@@ -39,9 +39,37 @@ export default async function readConfigFileAndSetRootDir(
   let configObject;
 
   try {
-    // @ts-expect-error: type assertion can be removed once @types/node is updated to 23 https://nodejs.org/api/process.html#processfeaturestypescript
-    if (isTS && !process.features.typescript) {
-      configObject = await loadTSConfigFile(configPath);
+    if (isTS) {
+      // @ts-expect-error: Type assertion can be removed once @types/node is updated to 23 https://nodejs.org/api/process.html#processfeaturestypescript
+      if (process.features.typescript) {
+        try {
+          // Try native node TypeScript support first.
+          configObject = await requireOrImportModule<any>(configPath);
+        } catch (requireOrImportModuleError) {
+          if (!(requireOrImportModuleError instanceof SyntaxError)) {
+            throw requireOrImportModuleError;
+          }
+          try {
+            // Likely ESM in a file interpreted as CJS, which means it needs to be
+            // compiled. We ignore the error and try to load it with a loader.
+            configObject = await loadTSConfigFile(configPath);
+          } catch (loadTSConfigFileError) {
+            // If we still encounter an error, we throw both messages combined.
+            // This string is caught further down and merged into a new error message.
+            // eslint-disable-next-line no-throw-literal
+            throw (
+              // Preamble text is added further down:
+              // Jest: Failed to parse the TypeScript config file ${configPath}\n
+              '  both with the native node TypeScript support and configured TypeScript loaders.\n' +
+              '    Errors were:\n' +
+              `    - ${requireOrImportModuleError}\n` +
+              `    - ${loadTSConfigFileError}`
+            );
+          }
+        }
+      } else {
+        configObject = await loadTSConfigFile(configPath);
+      }
     } else if (isJSON) {
       const fileContent = fs.readFileSync(configPath, 'utf8');
       configObject = parseJson(stripJsonComments(fileContent), configPath);
