@@ -303,15 +303,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/common@npm:^12.0.0":
-  version: 12.2.17
-  resolution: "@angular/common@npm:12.2.17"
+"@angular/common@npm:^19.2.16":
+  version: 19.2.16
+  resolution: "@angular/common@npm:19.2.16"
   dependencies:
-    tslib: "npm:^2.2.0"
+    tslib: "npm:^2.3.0"
   peerDependencies:
-    "@angular/core": 12.2.17
-    rxjs: ^6.5.3 || ^7.0.0
-  checksum: 10/c50a16d98c38d2f1931c13d16b52f3d36218cfbdde46334436aa13cf7825d25a8d03cb194c821bd03e6439dd759fc900a3ec9ef3a7fd22fc8bad018fd9f5eb37
+    "@angular/core": 19.2.16
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10/b27d43f236fb429f9248c1cfdeb8fc3becef0f4d15b55939085826b13659d55df7845beb6702330a10199f4b2a129f48e75fe9e44af225834b4968fbde0fad4c
   languageName: node
   linkType: hard
 
@@ -7853,7 +7853,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "angular@workspace:examples/angular"
   dependencies:
-    "@angular/common": "npm:^12.0.0"
+    "@angular/common": "npm:^19.2.16"
     "@angular/compiler": "npm:^12.0.0"
     "@angular/core": "npm:^12.0.0"
     "@angular/forms": "npm:^12.0.0"
